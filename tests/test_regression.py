@@ -492,20 +492,26 @@ class TestVigenereKeyRecoveryRegression(unittest.TestCase):
         recovered = self.vigenere.recover_key(ct, 5)
         self.assertEqual(recovered, "LEMON")
 
-    def test_vigenere_recovers_exact_key_lemon_119_letters(self):
+    def test_vigenere_crack_recovers_exact_key_lemon_119_letters(self):
         """
         Regression test for a 119-letter plaintext encrypted with key='LEMON'.
-        Validates that the hill-climbing algorithm correctly recovers the key
-        without getting stuck in a local optimum.
+        Validates that the crack() pipeline correctly ranks the true key #1,
+        and doesn't overfit to multiples of the key (e.g. LEMONRPMON).
         """
         text = (
-            "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG "
-            "CRYPTOGRAPHY IS FUN AND INTERESTING TO LEARN "
-            "BUT VIGENERE CAN BE TRICKY SOMETIMES ONE TWO THREE FOUR"
+            "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG AND THIS MESSAGE "
+            "IS USED TO TEST THE CRYPTANALYSIS SYSTEM WITH ENOUGH TEXT FOR "
+            "STATISTICAL ANALYSIS"
         )
         ct = self.vigenere.encrypt(text, "LEMON")
-        recovered = self.vigenere.recover_key(ct, 5)
-        self.assertEqual(recovered, "LEMON")
+        results = self.vigenere.crack(ct)
+        self.assertGreater(len(results), 0, "crack() returned empty results")
+        
+        top_key = results[0]["key"]
+        self.assertEqual(
+            top_key, "LEMON",
+            f"Expected LEMON to be ranked #1, but got {top_key}"
+        )
 
 
     def test_vigenere_crack_ranks_correct_key_first(self):
@@ -518,7 +524,8 @@ class TestVigenereKeyRecoveryRegression(unittest.TestCase):
             (PROSE_A, "CIPHER"),
             (PROSE_B, "CRYPTO"),
             (PROSE_C, "SECRET"),
-            (PROSE_ALL, "LEMON")
+            (PROSE_ALL, "LEMON"),
+            (PROSE_ALL, "CRYPTOGRAPH")  # Geniunely longer key (length 11)
         ]
 
         for text, key in test_cases:

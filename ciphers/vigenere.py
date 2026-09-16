@@ -264,7 +264,7 @@ class VigenereCipher:
             if not col:
                 top_shifts_per_col.append([0])
             else:
-                top_shifts_per_col.append(self._get_top_shifts_for_column(col, top_n=5))
+                top_shifts_per_col.append(self._get_top_shifts_for_column(col, top_n=26))
 
         # Initial guess: the best chi-sq shift for each column independently
         best_key = [shifts[0] for shifts in top_shifts_per_col]
@@ -328,6 +328,8 @@ class VigenereCipher:
         candidates = []
         seen_keys = set()
 
+        ic_map = {r["key_length"]: r["score"] for r in ic_results}
+
         for kl in top_lengths:
             key = self.recover_key(ciphertext, kl)
             if key in seen_keys:
@@ -336,7 +338,20 @@ class VigenereCipher:
 
             decrypted_clean = self.decrypt(letters, key)
             decrypted = self.decrypt(ciphertext, key)
-            score = self.scorer.score(decrypted)
+            
+            raw_score = self.scorer.score(decrypted)
+            
+            # Principled ranking: combine the raw language score with the key-length
+            # evidence from the Index of Coincidence (IC).
+            # A longer key that merely overfits statistical noise will have a poorer IC score
+            # than the true shorter key, allowing the simpler key to win.
+            ic_score = ic_map.get(kl, 0.0)
+            
+            # We weight the language score heavily (80%) and let IC evidence (20%) 
+            # break ties. Finally, we apply a small, deterministic complexity penalty
+            # to strictly prefer simpler keys over multiple-length overfits (Occam's razor).
+            adjusted_score = raw_score * (0.80 + 0.20 * ic_score) - (kl * 0.005)
+            adjusted_score = max(0.0, adjusted_score)
 
             candidates.append({
                 "cipher": "Vigenère",
@@ -344,13 +359,10 @@ class VigenereCipher:
                 "key_length": kl,
                 "plaintext": decrypted,
                 "plaintext_clean": decrypted_clean,
-                "score": score,
+                "score": adjusted_score,
+                "raw_score": raw_score,  # Keep raw score for debugging/inspection
             })
 
-        # Sort candidates using a small length penalty to prevent overfitting.
-        # (Multiples of the true key length, e.g. kl=12 vs kl=6, can sometimes
-        # achieve a slightly higher language score by fitting statistical noise.
-        # Occam's razor: prefer the shorter key if scores are very close.)
-        candidates.sort(key=lambda x: x["score"] - (x["key_length"] * 0.002), reverse=True)
+        candidates.sort(key=lambda x: x["score"], reverse=True)
         return candidates
 
