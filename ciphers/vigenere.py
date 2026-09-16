@@ -278,13 +278,15 @@ class VigenereCipher:
         best_score = score_key(best_key)
         improved = True
 
-        # Hill climbing: iteratively try 2nd, 3rd, 4th, 5th best shifts for each column
+        # Hill climbing: iteratively try all top shifts for each column
         # and keep them if they improve the FULL text language score (which includes
         # horizontal n-gram and word checks).
         while improved:
             improved = False
             for i in range(key_length):
-                for shift in top_shifts_per_col[i][1:]:
+                for shift in top_shifts_per_col[i]:
+                    if shift == best_key[i]:
+                        continue
                     test_key = best_key.copy()
                     test_key[i] = shift
                     score = score_key(test_key)
