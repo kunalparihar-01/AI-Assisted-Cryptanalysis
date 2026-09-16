@@ -36,6 +36,22 @@ class TestHelpers(unittest.TestCase):
     def test_clean_text_basic(self):
         self.assertEqual(clean_text("Hello World"), "HELLO WORLD")
 
+    def test_get_short_ciphertext_warning(self):
+        from utils.helpers import get_short_ciphertext_warning
+        
+        # Less than 20 chars
+        self.assertIn("Very short ciphertext", get_short_ciphertext_warning("A" * 19))
+        self.assertIn("Very short ciphertext", get_short_ciphertext_warning("A" * 19 + "123!@#"))
+        
+        # 20 to 49 chars
+        self.assertIn("Short ciphertext", get_short_ciphertext_warning("B" * 20))
+        self.assertIn("Short ciphertext", get_short_ciphertext_warning("B" * 49))
+        
+        # 50 or more chars
+        self.assertIsNone(get_short_ciphertext_warning("C" * 50))
+        self.assertIsNone(get_short_ciphertext_warning("C" * 100))
+
+
     def test_clean_text_removes_punctuation(self):
         result = clean_text("Hello, World! 123")
         self.assertNotIn(",", result)

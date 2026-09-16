@@ -138,3 +138,23 @@ def validate_input(text: str, min_length: int = 4) -> tuple[bool, str]:
         )
     return True, ""
 
+
+def get_short_ciphertext_warning(text: str) -> Optional[str]:
+    """
+    Returns a warning string if the ciphertext has too few alphabetic characters
+    for reliable statistical analysis or cipher detection, or None if it's long enough.
+
+    Thresholds:
+      - < 20: "Very short ciphertext: statistical analysis and cipher detection may be unreliable."
+      - 20-49: "Short ciphertext: statistical results and cryptanalysis may have lower confidence."
+      - >= 50: None
+    """
+    letters_only = text_to_upper_alpha(text)
+    n = len(letters_only)
+    
+    if n < 20:
+        return "Very short ciphertext: statistical analysis and cipher detection may be unreliable."
+    elif 20 <= n < 50:
+        return "Short ciphertext: statistical results and cryptanalysis may have lower confidence."
+    return None
+

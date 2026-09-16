@@ -41,7 +41,7 @@ from analysis.frequency   import FrequencyAnalyzer, ENGLISH_LETTER_FREQ
 from analysis.language_score import LanguageScorer
 from analysis.cipher_detection import CipherDetector
 from utils.helpers import (
-    validate_input, index_of_coincidence, character_entropy, text_to_upper_alpha
+    validate_input, index_of_coincidence, character_entropy, text_to_upper_alpha, get_short_ciphertext_warning
 )
 
 # ── lazy-loaded ML predictor (triggers training only once, cached) ─────────────
@@ -443,6 +443,10 @@ elif page == "🔍 Cryptanalysis":
             st.error(err)
             st.stop()
 
+        warning_msg = get_short_ciphertext_warning(ct_input)
+        if warning_msg:
+            st.warning(warning_msg)
+
         with st.spinner("Running cryptanalysis…"):
 
             # ── 1. Cipher detection ──────────────────────────────────────────
@@ -622,6 +626,10 @@ elif page == "📊 Frequency Analysis":
         if not valid:
             st.error(err)
             st.stop()
+
+        warning_msg = get_short_ciphertext_warning(ct_input)
+        if warning_msg:
+            st.warning(warning_msg)
 
         letters = text_to_upper_alpha(ct_input)
 
