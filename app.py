@@ -463,6 +463,19 @@ elif page == "🔍 Cryptanalysis":
         # ── Detection scores ─────────────────────────────────────────────────
         st.markdown("<h3 class='section-header'>🧠 Cipher Detection</h3>",
                     unsafe_allow_html=True)
+                    
+        # Confidence Layer
+        conf_eval = detector.evaluate_confidence(detection, stats["letter_count"])
+        conf_color = {"High": "#2ea043", "Moderate": "#d29922", "Low": "#f85149"}.get(conf_eval["confidence"], "#8b949e")
+        st.markdown(
+            f"<div style='padding: 12px; border-radius: 6px; background-color: rgba(27,33,40,0.5); border: 1px solid #30363d; margin-bottom: 20px;'>"
+            f"<h4>Detected Cipher: <span style='color:{conf_color}'>{conf_eval['cipher']}</span></h4>"
+            f"<strong>Confidence: {conf_eval['confidence']}</strong><br>"
+            f"<span style='color:#8b949e'>{conf_eval['reason']}</span>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+
         dcols = st.columns(len(detection))
         for i, d in enumerate(detection):
             with dcols[i]:

@@ -521,6 +521,54 @@ class TestCipherDetector(unittest.TestCase):
         self.assertGreaterEqual(ic, 0.0)
         self.assertLessEqual(ic, 1.0)
 
+    def test_evaluate_confidence_normal_caesar(self):
+        results = [{"cipher": "Caesar", "combined_score": 0.62, "rule_score": 0.63, "ml_score": 0.61},
+                   {"cipher": "Substitution", "combined_score": 0.38, "rule_score": 0.37, "ml_score": 0.39}]
+        conf = self.detector.evaluate_confidence(results, text_length=100)
+        self.assertNotEqual(conf["confidence"], "Low")
+        self.assertNotEqual(conf["cipher"], "Unknown / Low Confidence")
+
+    def test_evaluate_confidence_normal_vigenere(self):
+        # Diff = 0.57 (Rule: 0.90, ML: 0.33) -> diff <= 0.60
+        results = [{"cipher": "Vigenere", "combined_score": 0.65, "rule_score": 0.88, "ml_score": 0.31},
+                   {"cipher": "Caesar", "combined_score": 0.20, "rule_score": 0.10, "ml_score": 0.35}]
+        conf = self.detector.evaluate_confidence(results, text_length=100)
+        self.assertNotEqual(conf["confidence"], "Low")
+
+    def test_evaluate_confidence_normal_substitution(self):
+        # Gap = 0.05
+        results = [{"cipher": "Substitution", "combined_score": 0.52, "rule_score": 0.55, "ml_score": 0.48},
+                   {"cipher": "Caesar", "combined_score": 0.47, "rule_score": 0.45, "ml_score": 0.50}]
+        conf = self.detector.evaluate_confidence(results, text_length=100)
+        self.assertNotEqual(conf["confidence"], "Low")
+
+    def test_evaluate_confidence_short_ciphertext(self):
+        results = [{"cipher": "Caesar", "combined_score": 0.90, "rule_score": 0.90, "ml_score": 0.90},
+                   {"cipher": "Substitution", "combined_score": 0.05, "rule_score": 0.05, "ml_score": 0.05}]
+        conf = self.detector.evaluate_confidence(results, text_length=25)
+        self.assertEqual(conf["confidence"], "Low")
+
+    def test_evaluate_confidence_ambiguous_random(self):
+        # top_score < 0.40
+        results = [{"cipher": "Caesar", "combined_score": 0.35, "rule_score": 0.35, "ml_score": 0.35},
+                   {"cipher": "Vigenere", "combined_score": 0.33, "rule_score": 0.33, "ml_score": 0.33}]
+        conf = self.detector.evaluate_confidence(results, text_length=100)
+        self.assertEqual(conf["confidence"], "Low")
+
+    def test_evaluate_confidence_strong_disagreement(self):
+        # diff > 0.60
+        results = [{"cipher": "Vigenere", "combined_score": 0.65, "rule_score": 0.99, "ml_score": 0.10},
+                   {"cipher": "Caesar", "combined_score": 0.20, "rule_score": 0.05, "ml_score": 0.45}]
+        conf = self.detector.evaluate_confidence(results, text_length=100)
+        self.assertEqual(conf["confidence"], "Low")
+
+    def test_existing_detection_scores_unchanged(self):
+        text = "HELLOWORLDHELLOWORLDHELLOWORLD"
+        results = self.detector.detect(text)
+        self.assertEqual(len(results), 3)
+        self.assertIn("combined_score", results[0])
+        self.assertTrue(isinstance(results[0]["percentage"], float))
+
 
 # ─────────────────────────────────────────────
 #  Reference data sanity checks

@@ -253,6 +253,71 @@ class CipherDetector:
         results.sort(key=lambda x: x["combined_score"], reverse=True)
         return results
 
+    def evaluate_confidence(self, results: list, text_length: int) -> dict:
+        """
+        Evaluate the confidence of the detection based on statistical and ML evidence.
+        
+        Rules:
+        - Highest overall score (top_score)
+        - Gap between top and 2nd best (gap)
+        - Disagreement between rule-based and ML detection (rule_ml_diff)
+        - Ciphertext length (text_length)
+        
+        Returns:
+            {"cipher": str, "confidence": "High" | "Moderate" | "Low", "reason": str}
+        """
+        if not results:
+            return {"cipher": "Unknown / Low Confidence", "confidence": "Low", "reason": "No results."}
+            
+        top = results[0]
+        runner_up = results[1] if len(results) > 1 else top
+        
+        top_score = top["combined_score"]
+        gap = top_score - runner_up["combined_score"]
+        rule_ml_diff = abs(top["rule_score"] - top["ml_score"])
+        
+        # LOW CONFIDENCE CHECKS
+        is_low = False
+        reasons = []
+        
+        if text_length < 30:
+            is_low = True
+            reasons.append("Ciphertext is too short for reliable statistical separation.")
+            
+        if gap < 0.03:
+            is_low = True
+            reasons.append("Top candidate scores are too close together.")
+            
+        if top_score < 0.40:
+            is_low = True
+            reasons.append("No cipher class received a strong combined score.")
+            
+        if rule_ml_diff > 0.60:
+            is_low = True
+            reasons.append("Strong disagreement between rule-based heuristics and ML model.")
+            
+        if is_low:
+            return {
+                "cipher": "Unknown / Low Confidence",
+                "confidence": "Low",
+                "reason": "The available statistical and machine-learning evidence is not strong enough to reliably identify the cipher. " + " ".join(reasons)
+            }
+            
+        # HIGH CONFIDENCE CHECKS
+        if text_length >= 50 and top_score >= 0.60 and gap >= 0.10 and rule_ml_diff <= 0.35:
+            return {
+                "cipher": top["cipher"],
+                "confidence": "High",
+                "reason": "Evidence strongly and consistently supports this classification."
+            }
+            
+        # MODERATE CONFIDENCE (Fallback)
+        return {
+            "cipher": top["cipher"],
+            "confidence": "Moderate",
+            "reason": "Evidence points to this cipher, but with some statistical ambiguity."
+        }
+
     def get_statistics(self, text: str) -> dict:
         """
         Return a comprehensive dict of statistical measures about the ciphertext.
