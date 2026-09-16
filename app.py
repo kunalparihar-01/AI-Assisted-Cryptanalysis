@@ -438,7 +438,7 @@ elif page == "🔍 Cryptanalysis":
                             placeholder="Paste your ciphertext here…")
 
     if st.button("🔍 Analyse", type="primary"):
-        valid, err = validate_input(ct_input, min_length=10)
+        valid, err = validate_input(ct_input)
         if not valid:
             st.error(err)
             st.stop()
@@ -635,7 +635,7 @@ elif page == "📊 Frequency Analysis":
                             placeholder="Paste ciphertext or plaintext here…")
 
     if st.button("📊 Analyse Frequencies", type="primary") and ct_input:
-        valid, err = validate_input(ct_input, min_length=8)
+        valid, err = validate_input(ct_input)
         if not valid:
             st.error(err)
             st.stop()

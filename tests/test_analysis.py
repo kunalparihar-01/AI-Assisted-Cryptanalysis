@@ -165,21 +165,44 @@ class TestHelpers(unittest.TestCase):
     def test_validate_empty_string_fails(self):
         valid, msg = validate_input("")
         self.assertFalse(valid)
-        self.assertIn("empty", msg.lower())
+        self.assertEqual(msg, "Please enter some text.")
 
-    def test_validate_too_short_fails(self):
-        valid, msg = validate_input("AB", min_length=4)
+    def test_validate_whitespace_only_fails(self):
+        valid, msg = validate_input("   \n \t ")
         self.assertFalse(valid)
-        self.assertIn("short", msg.lower())
+        self.assertEqual(msg, "Please enter some text.")
 
-    def test_validate_adequate_text_passes(self):
-        valid, msg = validate_input("HELLO WORLD")
+    def test_validate_numbers_only_fails(self):
+        valid, msg = validate_input("123456789")
+        self.assertFalse(valid)
+        self.assertEqual(msg, "Please enter text containing alphabetic characters.")
+
+    def test_validate_symbols_only_fails(self):
+        valid, msg = validate_input("!!! ??? ###")
+        self.assertFalse(valid)
+        self.assertEqual(msg, "Please enter text containing alphabetic characters.")
+
+    def test_validate_alphabetic_input_passes(self):
+        valid, msg = validate_input("HELLOWORLD")
         self.assertTrue(valid)
         self.assertEqual(msg, "")
 
-    def test_validate_punctuation_only_fails(self):
-        valid, msg = validate_input("!!! ??? ###")
-        self.assertFalse(valid)
+    def test_validate_mixed_text_passes(self):
+        valid, msg = validate_input("Hello, World! 123")
+        self.assertTrue(valid)
+        self.assertEqual(msg, "")
+
+    def test_validate_very_short_alphabetic_passes(self):
+        # Extremely short alphabetic input (length 1, 2, 3) should pass 
+        # validate_input and let the warning/confidence layers handle it.
+        valid, msg = validate_input("A")
+        self.assertTrue(valid)
+        
+        valid, msg = validate_input("AB")
+        self.assertTrue(valid)
+        
+        valid, msg = validate_input("XYZ")
+        self.assertTrue(valid)
 
     # --- format_key ---
 

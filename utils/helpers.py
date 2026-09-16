@@ -120,7 +120,7 @@ def character_entropy(text: str) -> float:
     return entropy
 
 
-def validate_input(text: str, min_length: int = 4) -> tuple[bool, str]:
+def validate_input(text: str, min_length: int = 1) -> tuple[bool, str]:
     """
     Validate ciphertext input before analysis.
 
@@ -128,9 +128,12 @@ def validate_input(text: str, min_length: int = 4) -> tuple[bool, str]:
         (is_valid, error_message)
     """
     if not text or not text.strip():
-        return False, "Input text is empty. Please enter some ciphertext."
+        return False, "Please enter some text."
 
     letters_only = text_to_upper_alpha(text)
+    if len(letters_only) == 0:
+        return False, "Please enter text containing alphabetic characters."
+        
     if len(letters_only) < min_length:
         return False, (
             f"Text is too short for meaningful analysis. "
